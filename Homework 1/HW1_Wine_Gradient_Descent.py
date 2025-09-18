@@ -511,6 +511,7 @@ n = len(data)
 train_end = int(n * 0.6) # 60% for training
 valid_end = train_end + int(n * 0.2) # 20% for validation
 
+# Split into training, validation, testing
 X_train = data[:train_end]
 X_valid = data[train_end:valid_end]
 X_test = data[valid_end:]
@@ -556,6 +557,7 @@ if zeros.size > 0:
 # w_l1, mse_hist_l1, zeros = mini_batch_with_l1_reg(X_train, Y_train, alpha=0.08)
 # if zeros.size > 0:
 #     w_retrained, mse_retrained, dropped = retrain_without_zero_weights_mini_batch(X_train, Y_train, zeros)
+
 
 
 
