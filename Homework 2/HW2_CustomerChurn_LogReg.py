@@ -112,7 +112,7 @@ print(f"Testing set size: {len(test_df)}")
 # Task 4: LOGISTIC REGRESSION MODELING
 
 from sklearn import linear_model
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score, roc_curve
 
 feature_cols = [col for col in df.columns if col != 'Exited']
 
@@ -145,3 +145,16 @@ print("\nClassification Report:\n", classification_report(y_test, y_pred))
 print("Confusion Matrix:\n", confusion_matrix)
 
 # To do: ROC Curve and AUC yet to be implemented, handle class imbalance if needed
+
+# ROC Curve and AUC
+y_prob = model.predict_proba(X_test)[:, 1] # Get predicted probabilities for positive class
+fpr, tpr, thresholds = roc_curve(y_test, y_prob)
+auc = roc_auc_score(y_test, y_prob)
+plt.figure()
+plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {auc:.4f})')
+plt.plot([0, 1], [0, 1], 'k--') # Diagonal line for random guessing
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc='lower right')
+plt.show() # DISPLAY ROC CURVE
