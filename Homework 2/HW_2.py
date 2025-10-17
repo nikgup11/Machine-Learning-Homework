@@ -146,58 +146,82 @@ print(f"F1-Score: {f1_score}")
 
 print("\nClassification Report:\n", classification_report(y_test, y_pred))
 
-# STEP 6: MODEL INTERPRETATION (Feature Coefficients)
 
+# Sigmoid function
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+# Logistic Regression training with Gradient Descent
+def train_logistic_regression(X, y, lr=0.01, epochs=1000):
+    m, n = X.shape
+    weights = np.zeros(n)
+    bias = 0
+
+    for _ in range(epochs):
+        # Forward pass
+        linear_model = np.dot(X, weights) + bias
+        y_hat = sigmoid(linear_model)
+
+        # Compute gradients
+        dw = (1/m) * np.dot(X.T, (y_hat - y))
+        db = (1/m) * np.sum(y_hat - y)
+
+        # Update parameters
+        weights -= lr * dw
+        bias -= lr * db
+
+    return weights, bias
+
+# Train our model
+weights, bias = train_logistic_regression(X_train.values, y_train.values, lr=0.01, epochs=5000)
+
+# Predictions
+def predict(X, weights, bias, threshold=0.5):
+    linear_model = np.dot(X, weights) + bias
+    y_hat = sigmoid(linear_model)
+    return (y_hat >= threshold).astype(int), y_hat
+
+y_pred, y_prob = predict(X_test.values, weights, bias, threshold=0.5)
+
+# STEP 6: Feature Coefficients
 coefficients = pd.DataFrame({
     'Feature': X_train.columns,
-    'Coefficient': model.coef_[0]
+    'Coefficient': weights
 })
-
 coefficients['AbsCoefficient'] = coefficients['Coefficient'].abs()
 coefficients = coefficients.sort_values(by='AbsCoefficient', ascending=False)
 
 print("\nFeature Coefficients (sorted by absolute importance):")
 print(coefficients)
 
-# STEP 7: MODEL OPTIMIZATION — Hyperparameter Tuning & Regularization
+# STEP 7: Model Evaluation (manual metrics)
 
-from sklearn.model_selection import GridSearchCV
+def confusion_matrix_manual(y_true, y_pred):
+    TP = np.sum((y_true == 1) & (y_pred == 1))
+    TN = np.sum((y_true == 0) & (y_pred == 0))
+    FP = np.sum((y_true == 0) & (y_pred == 1))
+    FN = np.sum((y_true == 1) & (y_pred == 0))
+    return np.array([[TN, FP],
+                     [FN, TP]])
 
-log_reg = linear_model.LogisticRegression(max_iter=10000, solver='liblinear')
+cm = confusion_matrix_manual(y_test.values, y_pred)
+accuracy = np.mean(y_pred == y_test.values)
+precision = cm[1,1] / (cm[0,1] + cm[1,1] + 1e-10)
+recall = cm[1,1] / (cm[1,0] + cm[1,1] + 1e-10)
+f1 = 2 * (precision * recall) / (precision + recall + 1e-10)
 
-param_grid = {
-    'penalty': ['l1', 'l2'],
-    'C': [0.01, 0.1, 1, 10]
-}
+print("\nConfusion Matrix:\n", cm)
+print(f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}")
 
-grid = GridSearchCV(log_reg, param_grid, cv=5, scoring='f1')
-grid.fit(X_train, y_train)
+# STEP 7 (continued): Try different threshold
+threshold = 0.4
+y_pred_thresh, _ = predict(X_test.values, weights, bias, threshold=threshold)
+cm_thresh = confusion_matrix_manual(y_test.values, y_pred_thresh)
+print(f"\nConfusion Matrix with threshold={threshold}:\n", cm_thresh)
 
-best_model = grid.best_estimator_
-print("\nBest Hyperparameters:", grid.best_params_)
+# STEP 8: Visualizations
 
-# Evaluate optimized model
-y_pred_opt = best_model.predict(X_test)
-print("\nOptimized Model Performance:")
-print(classification_report(y_test, y_pred_opt))
-print("Confusion Matrix:")
-print(confusion_matrix(y_test, y_pred_opt))
-
-# STEP 7 (Continued): Threshold Adjustment
-
-# Use best_model instead of the original model
-y_prob = best_model.predict_proba(X_test)[:, 1]
-threshold = 0.4  # adjust as needed
-y_pred_thresh = (y_prob >= threshold).astype(int)
-
-print(f"\nClassification Report with Threshold = {threshold}:")
-print(classification_report(y_test, y_pred_thresh))
-print("Confusion Matrix with Threshold:")
-print(confusion_matrix(y_test, y_pred_thresh))
-
-
-# STEP 8: VISUALIZATION — Churn Probability Distribution
-
+# Churn probability distribution
 plt.figure(figsize=(8, 5))
 plt.hist(y_prob, bins=20, edgecolor='black')
 plt.title('Churn Probability Distribution')
@@ -205,10 +229,8 @@ plt.xlabel('Predicted Probability of Churn')
 plt.ylabel('Frequency')
 plt.show()
 
-# STEP 8: Important Feature Visualization
-
+# Important feature coefficients
 top_features = coefficients.nlargest(10, 'AbsCoefficient')
-
 plt.figure(figsize=(10, 6))
 plt.barh(top_features['Feature'], top_features['Coefficient'])
 plt.title('Top Logistic Regression Feature Coefficients')
@@ -217,21 +239,26 @@ plt.ylabel('Feature')
 plt.gca().invert_yaxis()
 plt.show()
 
+# ROC Curve
+def roc_curve_manual(y_true, y_scores):
+    thresholds = np.linspace(0, 1, 100)
+    tpr, fpr = [], []
+    for thresh in thresholds:
+        y_pred = (y_scores >= thresh).astype(int)
+        cm = confusion_matrix_manual(y_true, y_pred)
+        TP, FN = cm[1,1], cm[1,0]
+        FP, TN = cm[0,1], cm[0,0]
+        tpr.append(TP / (TP + FN + 1e-10))
+        fpr.append(FP / (FP + TN + 1e-10))
+    return fpr, tpr
 
+fpr, tpr = roc_curve_manual(y_test.values, y_prob)
 
-
-
-# To do: ROC Curve and AUC yet to be implemented, handle class imbalance if needed
-
-# ROC Curve and AUC
-y_prob = best_model.predict_proba(X_test)[:, 1]# Get predicted probabilities for positive class
-fpr, tpr, thresholds = roc_curve(y_test, y_prob)
-auc = roc_auc_score(y_test, y_prob)
 plt.figure()
-plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {auc:.4f})')
-plt.plot([0, 1], [0, 1], 'k--') # Diagonal line for random guessing
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('Receiver Operating Characteristic (ROC) Curve')
-plt.legend(loc='lower right')
-plt.show() # DISPLAY ROC CURVE
+plt.plot(fpr, tpr, label="ROC Curve")
+plt.plot([0, 1], [0, 1], 'k--')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve (Manual)")
+plt.legend()
+plt.show()
