@@ -147,33 +147,72 @@ print(f"F1-Score: {f1_score}")
 print("\nClassification Report:\n", classification_report(y_test, y_pred))
 
 
-# Sigmoid function
 def sigmoid(z):
+    z = np.array(z, dtype=np.float64)
+    z = np.clip(z, -500, 500) 
     return 1 / (1 + np.exp(-z))
 
+X_train_np = X_train.values.astype(float)
+X_test_np = X_test.values.astype(float)
+
+means = np.mean(X_train_np, axis=0)
+stds = np.std(X_train_np, axis=0)
+
+# Avoid division by zero
+stds[stds == 0] = 1
+
+X_train_scaled = (X_train_np - means) / stds
+X_test_scaled = (X_test_np - means) / stds
+
+
+
 # Logistic Regression training with Gradient Descent
-def train_logistic_regression(X, y, lr=0.01, epochs=1000):
-    m, n = X.shape
-    weights = np.zeros(n)
-    bias = 0
+def train_logistic_regression(X, y, lr=0.01, epochs=5000):
+    # Ensure correct dtypes
+    X = X.astype(float)
+    y = y.astype(float)
+
+    n_samples, n_features = X.shape
+    weights = np.zeros(n_features, dtype=float)
+    bias = 0.0
+
+    # ---- CLASS WEIGHTS ----
+    pos_count = np.sum(y == 1)
+    neg_count = np.sum(y == 0)
+    
+    weight_pos = n_samples / (2 * pos_count)   # for class 1
+    weight_neg = n_samples / (2 * neg_count)   # for class 0
 
     for _ in range(epochs):
-        # Forward pass
         linear_model = np.dot(X, weights) + bias
         y_hat = sigmoid(linear_model)
 
-        # Compute gradients
-        dw = (1/m) * np.dot(X.T, (y_hat - y))
-        db = (1/m) * np.sum(y_hat - y)
+        # Weighted errors
+        errors = np.zeros_like(y_hat)
+        for i in range(n_samples):
+            if y[i] == 1:
+                errors[i] = (y_hat[i] - y[i]) * weight_pos
+            else:
+                errors[i] = (y_hat[i] - y[i]) * weight_neg
 
-        # Update parameters
+        # Compute gradients
+        dw = (1 / n_samples) * np.dot(X.T, errors)
+        db = (1 / n_samples) * np.sum(errors)
+
+        # Parameter update
         weights -= lr * dw
         bias -= lr * db
 
     return weights, bias
 
-# Train our model
-weights, bias = train_logistic_regression(X_train.values, y_train.values, lr=0.01, epochs=5000)
+
+weights, bias = train_logistic_regression(
+    X_train_scaled,
+    y_train.values,
+    lr=0.001, 
+    epochs=5000
+)
+
 
 # Predictions
 def predict(X, weights, bias, threshold=0.5):
@@ -181,7 +220,8 @@ def predict(X, weights, bias, threshold=0.5):
     y_hat = sigmoid(linear_model)
     return (y_hat >= threshold).astype(int), y_hat
 
-y_pred, y_prob = predict(X_test.values, weights, bias, threshold=0.5)
+y_pred, y_prob = predict(X_test_scaled, weights, bias, threshold=0.5)
+
 
 # STEP 6: Feature Coefficients
 coefficients = pd.DataFrame({
@@ -214,8 +254,9 @@ print("\nConfusion Matrix:\n", cm)
 print(f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}")
 
 # STEP 7 (continued): Try different threshold
-threshold = 0.4
-y_pred_thresh, _ = predict(X_test.values, weights, bias, threshold=threshold)
+threshold = 0.25
+y_pred_thresh, _ = predict(X_test_scaled, weights, bias, threshold=threshold)
+
 cm_thresh = confusion_matrix_manual(y_test.values, y_pred_thresh)
 print(f"\nConfusion Matrix with threshold={threshold}:\n", cm_thresh)
 
