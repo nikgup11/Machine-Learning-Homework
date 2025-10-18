@@ -4,8 +4,6 @@ import pandas as pd
 import random
 import matplotlib.pyplot as plt
 
-
-
 # Batch Without Regularization
 def batch_without_reg(
     X_train,
@@ -333,9 +331,9 @@ def retrain_without_smallest_weight_mini_batch(
 def batch_with_l1_reg(
     X_train,
     Y_train,
-    alpha=0.5,
+    alpha=0.1,
     learning_rate=1e-5,
-    tolerance=1e-7,
+    tolerance=1e-6,
     max_iters=10000,
 ):
     m, n = X_train.shape
@@ -349,7 +347,7 @@ def batch_with_l1_reg(
         mse_history.append(mse)
 
         grad_mse = (2 / m) * (X_aug.T @ (Y_hat - Y_train))
-        grad_l1 = alpha * np.vstack([[0], np.sign(w[1:])])  # no reg on bias
+        grad_l1 = 2 * alpha * np.vstack([[0], np.sign(w[1:])])  # No reg. on bias
         grad = grad_mse + grad_l1
 
         w = w - learning_rate * grad
@@ -364,29 +362,13 @@ def batch_with_l1_reg(
     print("Final training MSE:", mse)
     print("Learned weight vector:", w.ravel())
 
-    zero_weight_indices = np.where(np.isclose(w[1:].ravel(), 0, atol=1e-2))[0]
+    zero_weight_indices = np.where(np.isclose(w[1:].ravel(), 0, atol=1e-8))[0]
     if zero_weight_indices.size > 0:
-        print(f"Features with ~zero weights to eliminate: {zero_weight_indices}")
+        print(f"Features with zero weights to eliminate: {zero_weight_indices}")
     else:
-        print("No features with zero weights found (within tolerance).")
-
-    # Always plot
-    largest_idx = np.argmax(np.abs(w[1:].ravel()))
-    feature_name = X_train.columns[largest_idx]
-    feature_values = X_train.iloc[:, largest_idx].to_numpy()
-    target_values = Y_train.ravel()
-
-    plt.scatter(feature_values, target_values, label="Data points")
-    regression_line = w[0, 0] + w[largest_idx + 1, 0] * feature_values
-    plt.plot(feature_values, regression_line, color="red", label="Regression line")
-    plt.xlabel(feature_name)
-    plt.ylabel("Quality")
-    plt.title("L1 Regularization (Batch)")
-    plt.legend()
-    plt.show()
+        print("No features with zero weights found.")
 
     return w, mse_history, zero_weight_indices
-
 
 def retrain_without_zero_weights(
     X_train, Y_train, zero_weight_indices,
@@ -423,18 +405,18 @@ def retrain_without_zero_weights(
 
     return w_retrained, hist, zero_weight_indices
 
-# L1 Mini-Batch 
+# L1 Mini-Batch ***NEEDS FIXING***
 def mini_batch_with_l1_reg(
     X_train,
     Y_train,
-    alpha=0.1,            # L1 regularization strength
+    alpha=0.1,
     learning_rate=1e-5,
     tolerance=1e-6,
     max_epochs=100,
     batch_size=32,
 ):
     m, n = X_train.shape
-    X_aug = np.hstack([np.ones((m, 1)), X_train])  # add bias
+    X_aug = np.hstack([np.ones((m, 1)), X_train])
     w = np.random.randn(n + 1, 1)
     mse_history = []
 
@@ -451,17 +433,13 @@ def mini_batch_with_l1_reg(
             mse = np.mean((Y_batch - Y_hat) ** 2)
             mse_history.append(mse)
 
-            batch_m = X_batch.shape[0]   # Gradient of MSE
+            batch_m = X_batch.shape[0]
             grad_mse = (2 / batch_m) * (X_batch.T @ (Y_hat - Y_batch))
-            grad_l1 = alpha * np.vstack([[0], np.sign(w[1:])])  # no reg on bias
 
-            # Subgradient for L1 (skip bias term)
-            grad_l1 = np.vstack([np.array([[0]]), alpha * np.sign(w[1:])])
+            w[0] = w[0] - learning_rate * grad_mse[0]  # no reg on bias
+            w[1:] = w[1:] - learning_rate * grad_mse[1:]
 
-            # Update weights
-            w = w - learning_rate * (grad_mse + grad_l1)
-
-        if np.linalg.norm(grad) < tolerance:
+        if np.linalg.norm(grad_mse) < tolerance:
             print(f"Converged after {epoch} epochs.")
             break
 
@@ -471,33 +449,17 @@ def mini_batch_with_l1_reg(
     print("Final training MSE:", mse)
     print("Learned weight vector:", w.ravel())
 
-    zero_weight_indices = np.where(np.isclose(w[1:].ravel(), 0, atol=1e-2))[0]
+    zero_weight_indices = np.where(np.isclose(w[1:].ravel(), 0, atol=1e-8))[0]
     if zero_weight_indices.size > 0:
-        print(f"Features with ~zero weights to eliminate: {zero_weight_indices}")
+        print(f"Features with zero weights to eliminate: {zero_weight_indices}")
     else:
-        print("No features with zero weights found (within tolerance).")
-
-    # Always plot
-    largest_idx = np.argmax(np.abs(w[1:].ravel()))
-    feature_name = X_train.columns[largest_idx]
-    feature_values = X_train.iloc[:, largest_idx].to_numpy()
-    target_values = Y_train.ravel()
-
-    plt.scatter(feature_values, target_values, label="Data points")
-    regression_line = w[0, 0] + w[largest_idx + 1, 0] * feature_values
-    plt.plot(feature_values, regression_line, color="red", label="Regression line")
-    plt.xlabel(feature_name)
-    plt.ylabel("Quality")
-    plt.title("L1 Regularization (Mini-Batch)")
-    plt.legend()
-    plt.show()
+        print("No features with zero weights found.")
 
     return w, mse_history, zero_weight_indices
 
-
 def retrain_without_zero_weights_mini_batch(
     X_train, Y_train, zero_weight_indices,
-    learning_rate=1e-5, tolerance=1e-7, max_epochs=100, batch_size=32
+    learning_rate=1e-5, tolerance=1e-6, max_epochs=100, batch_size=32
 ):
     X_reduced_np = np.delete(X_train, zero_weight_indices, axis=1)
     X_reduced = pd.DataFrame(X_reduced_np)
@@ -565,31 +527,24 @@ if Y_train.ndim == 1:
 
 # MODEL EXECUTION (uncomment sections as necessary to run specific regression models): 
 
-print("\nBATCH")
-batch_without_reg(X_train, Y_train)
-print("\nBATCH")
-batch_without_reg(X_train, Y_train)
+# print("\nBATCH")
+# batch_without_reg(X_train, Y_train)
 
-print("\nMINI-BATCH")
-mini_batch_without_reg(X_train, Y_train)
-print("\nMINI-BATCH")
-mini_batch_without_reg(X_train, Y_train)
+# print("\nMINI-BATCH")
+# mini_batch_without_reg(X_train, Y_train)
 
-print("\nL2 BATCH")
-w_l2, mse_hist = batch_with_l2_reg(X_train, Y_train, alpha=0.05)
-w_retrained, mse_hist_retrained, dropped_col = retrain_without_smallest_weight(X_train, Y_train, w_l2)
-print("\nL2 BATCH")
-w_l2, mse_hist = batch_with_l2_reg(X_train, Y_train, alpha=0.05)
-w_retrained, mse_hist_retrained, dropped_col = retrain_without_smallest_weight(X_train, Y_train, w_l2)
+# print("\nL2 BATCH")
+# w_l2, mse_hist = batch_with_l2_reg(X_train, Y_train, alpha=0.05)
+# w_retrained, mse_hist_retrained, dropped_col = retrain_without_smallest_weight(X_train, Y_train, w_l2)
 
-print("\nL2 MINI-BATCH")
-w_l2, mse_hist = mini_batch_with_l2_reg(X_train, Y_train, alpha=0.05)
-w_retrained, mse_hist_retrained, dropped_col = retrain_without_smallest_weight_mini_batch(X_train, Y_train, w_l2)
-print("\nL2 MINI-BATCH")
-w_l2, mse_hist = mini_batch_with_l2_reg(X_train, Y_train, alpha=0.05)
-w_retrained, mse_hist_retrained, dropped_col = retrain_without_smallest_weight_mini_batch(X_train, Y_train, w_l2)
+# print("\nL2 MINI-BATCH")
+# w_l2, mse_hist = mini_batch_with_l2_reg(X_train, Y_train, alpha=0.05)
+# w_retrained, mse_hist_retrained, dropped_col = retrain_without_smallest_weight_mini_batch(X_train, Y_train, w_l2)
 
 
+#-----------------------------------------------------------------------------------------------------------------------------
+# ***TO-DO ITEM***: L1 model not able to find 0 weights in features, thus cannot plot, could be an issue with the equations/math 
+#-----------------------------------------------------------------------------------------------------------------------------
 print("\nL1 BATCH")
 w_l1, mse_hist_l1, zeros = batch_with_l1_reg(X_train, Y_train, alpha=0.08)
 if zeros.size > 0:
@@ -597,11 +552,11 @@ if zeros.size > 0:
 
 #-----------------------------------------------------------------------------------------------------------------------------
 # ***TO-DO ITEM***: L1 model not able to find 0 weights in features, thus cannot plot, could be an issue with the equations/math
-# -----------------------------------------------------------------------------------------------------------------------------
-print("\nL1 MINI-BATCH")
-w_l1, mse_hist_l1, zeros = mini_batch_with_l1_reg(X_train, Y_train, alpha=0.08)
-if zeros.size > 0:
-    w_retrained, mse_retrained, dropped = retrain_without_zero_weights_mini_batch(X_train, Y_train, zeros)
+#-----------------------------------------------------------------------------------------------------------------------------
+# print("\nL1 MINI-BATCH")
+# w_l1, mse_hist_l1, zeros = mini_batch_with_l1_reg(X_train, Y_train, alpha=0.08)
+# if zeros.size > 0:
+#     w_retrained, mse_retrained, dropped = retrain_without_zero_weights_mini_batch(X_train, Y_train, zeros)
 
 
 
