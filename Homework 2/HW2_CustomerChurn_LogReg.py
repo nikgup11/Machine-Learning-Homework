@@ -128,6 +128,9 @@ y_pred = model.predict(X_test) # Make predictions on test set
 
 # To do: Hyperparameter tuning and Regularization yet to be implemented
 
+# Hyperparameter Tuning and Regularization:
+
+
 # TASK 5: MODEL EVALUATION
 accuracy = accuracy_score(y_test, y_pred) # Calculate accuracy
 report = classification_report(y_test, y_pred) # Get precision, recall, f1-score
@@ -143,8 +146,6 @@ print(f"F1-Score: {f1_score}")
 
 print("\nClassification Report:\n", classification_report(y_test, y_pred))
 print("Confusion Matrix:\n", confusion_matrix)
-
-# To do: ROC Curve and AUC yet to be implemented, handle class imbalance if needed
 
 # ROC Curve and AUC
 y_prob = model.predict_proba(X_test)[:, 1] # Get predicted probabilities for positive class
