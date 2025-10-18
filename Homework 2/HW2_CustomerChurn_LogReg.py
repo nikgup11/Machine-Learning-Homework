@@ -19,7 +19,7 @@ def chi_square_test(df: pd.DataFrame, col_a: str, col_b: str):
 # STEP 1: DATA PREPROCESSING
 
 # Load data set
-df = pd.read_csv('Churn_Modelling.csv')
+df = pd.read_csv('./Homework 2/Churn_Modelling.csv')
 
 # Histogram only for numeric columns
 df.drop(columns=['RowNumber', 'CustomerId', 'Exited']).hist(figsize=(12, 10), bins=20)
@@ -108,3 +108,53 @@ test_df = df_shuffled.iloc[split:] # 20% testing
 print('\nTrain-Test Split')
 print(f"Training set size: {len(train_df)}")
 print(f"Testing set size: {len(test_df)}")
+
+# Task 4: LOGISTIC REGRESSION MODELING
+
+from sklearn import linear_model
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score, roc_curve
+
+feature_cols = [col for col in df.columns if col != 'Exited']
+
+X_train = train_df.drop('Exited', axis=1) # Features for training
+y_train = train_df['Exited'] # Target variable for training
+X_test = test_df.drop('Exited', axis=1) # Features for testing
+y_test = test_df['Exited'] # Target variable for testing
+
+# Create logistic regression model
+model = linear_model.LogisticRegression(random_state=42, max_iter=10000)
+model.fit(X_train, y_train) # Train the model
+y_pred = model.predict(X_test) # Make predictions on test set
+
+# To do: Hyperparameter tuning and Regularization yet to be implemented
+
+# TASK 5: MODEL EVALUATION
+accuracy = accuracy_score(y_test, y_pred) # Calculate accuracy
+report = classification_report(y_test, y_pred) # Get precision, recall, f1-score
+precision = report.split()[-6] # Extract precision for positive class from report
+recall = report.split()[-4] # Extract recall for positive class from report
+f1_score = report.split()[-2] # Extract f1-score for positive class from report
+
+confusion_matrix = confusion_matrix(y_test, y_pred)
+print(f"\nLogistic Regression Model Accuracy: {accuracy:.4f}")
+print(f"Precision: {precision}")
+print(f"Recall: {recall}")
+print(f"F1-Score: {f1_score}")
+
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+print("Confusion Matrix:\n", confusion_matrix)
+
+# To do: ROC Curve and AUC yet to be implemented, handle class imbalance if needed
+
+# ROC Curve and AUC
+y_prob = model.predict_proba(X_test)[:, 1] # Get predicted probabilities for positive class
+fpr, tpr, thresholds = roc_curve(y_test, y_prob)
+auc = roc_auc_score(y_test, y_prob)
+plt.figure()
+plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {auc:.4f})')
+plt.plot([0, 1], [0, 1], 'k--') # Diagonal line for random guessing
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc='lower right')
+plt.show() # DISPLAY ROC CURVE
