@@ -23,15 +23,20 @@ def accuracy(y_true, y_pred):
 
 # F1 Score Calculation
 def f1_score(y_true, y_pred):
+    # Calculate the number of true positive, false positive, and false negative instances, by comparing labels between y_true and y_predicted
     tp = sum((yt == 1 and yp == 1) for yt, yp in zip(y_true, y_pred))
     fp = sum((yt == 0 and yp == 1) for yt, yp in zip(y_true, y_pred))
     fn = sum((yt == 1 and yp == 0) for yt, yp in zip(y_true, y_pred))
     
+    # Precision and Recall calculations (prevent zero division)
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0
     recall = tp / (tp + fn) if (tp + fn) > 0 else 0
     
+    # Prevent zero division for F1 score formula
     if precision + recall == 0:
         return 0.0
+    
+    # Return F1 Score calculation
     return 2 * (precision * recall) / (precision + recall)
 
 # ROC Calculation - TPR & FPR
@@ -175,7 +180,8 @@ max_accuracy = accuracies_per_split.max(axis=0)
 min_accuracy = accuracies_per_split.min(axis=0)
 avg_accuracy = accuracies_per_split.mean(axis=0)
 
-# Accuracy output
+# ID3 Accuracy output
+print('ID3 Decision Tree Accuracy Scores:')
 for i, bins in enumerate(bin_sizes):
     acc_list = [f'{acc:.4f}' for acc in accuracies_per_split[:, i]]
     print(f"Bins: {bins}")
@@ -306,9 +312,16 @@ avg_acc_nb = acc_nb.mean(axis=0)
 min_acc_nb = acc_nb.min(axis=0)
 max_acc_nb = acc_nb.max(axis=0)
 
+
+
+print('\nNaive Bayes Accuracy Scores:')
 for i,b in enumerate(bin_sizes):
     vals = [f"{x:.4f}" for x in acc_nb[:,i]]
-    print(f"Bins {b}: Accuracies={vals}, Min={min_acc_nb[i]:.4f}, Max={max_acc_nb[i]:.4f}, Avg={avg_acc_nb[i]:.4f}")
+    print(f"Bins: {b}")
+    print(f"\tAccuracies: {vals}")
+    print(f"\tMin Acc: {min_acc_nb[i]:.4f}")
+    print(f"\tMax Acc: {max_acc_nb[i]:.4f}")
+    print(f"\tAvg Acc: {avg_acc_nb[i]:.4f}")
 
 plt.figure(figsize=(10,6))
 for i in range(num_splits):
