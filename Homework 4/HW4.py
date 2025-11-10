@@ -162,11 +162,7 @@ for i in range(10):
 print(f"Execution time: {exec_time:.4f} seconds")
 print(f"Number of weight updates: {updates}")
 
-# ----------------------------------------------------------
-# PROBLEM 2: VARIABLE LEARNING RATES (DECAYING + ADAPTIVE)
-# ----------------------------------------------------------
-
-# Reuse the same dataset (x, targets) from Problem 1
+# PART 2: VARIABLE LEARNING RATES (DECAYING + ADAPTIVE)
 
 # Common parameters
 num_epochs = 100
@@ -183,9 +179,9 @@ b_decay = np.random.uniform(-0.5, 0.5)
 w_adapt = np.copy(w_decay)
 b_adapt = b_decay
 
-# --------------------------
-# (a) DECAYING LEARNING RATE
-# --------------------------
+
+# DECAYING LEARNING RATE
+
 lr = initial_lr
 decay_errors = []
 
@@ -226,9 +222,8 @@ plt.grid(True)
 plt.legend()
 plt.show()
 
-# --------------------------
-# (b) ADAPTIVE LEARNING RATE
-# --------------------------
+# ADAPTIVE LEARNING RATE
+
 eta = 0.3
 prev_error = float('inf')
 adapt_errors = []
