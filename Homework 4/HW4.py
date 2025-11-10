@@ -161,3 +161,123 @@ for i in range(10):
 # Compare delta rule batch training vs incremental training with execution time, weight updates, 
 print(f"Execution time: {exec_time:.4f} seconds")
 print(f"Number of weight updates: {updates}")
+
+# PART 2: VARIABLE LEARNING RATES (DECAYING + ADAPTIVE)
+
+# Common parameters
+num_epochs = 100
+initial_lr = 0.3
+decay_factor = 0.8
+t = 0.03
+d = 0.9
+D = 1.02
+
+# Initialize new weights and bias
+w_decay = np.random.uniform(-0.5, 0.5, size=(2,))
+b_decay = np.random.uniform(-0.5, 0.5)
+
+w_adapt = np.copy(w_decay)
+b_adapt = b_decay
+
+
+# DECAYING LEARNING RATE
+
+lr = initial_lr
+decay_errors = []
+
+for epoch in range(1, num_epochs + 1):
+    total_dw = np.zeros_like(w_decay)
+    total_db = 0
+    epoch_error = 0
+
+    for i in range(n_samples):
+        inp = x[i]
+        target = targets[i]
+        net = np.dot(w_decay, inp) + b_decay
+        out = sigmoid(net)
+        error = target - out
+        grad = error * sigmoid_prime(net)
+
+        total_dw += grad * inp
+        total_db += grad
+        epoch_error += error**2
+
+    w_decay += lr * total_dw
+    b_decay += lr * total_db
+    decay_errors.append(epoch_error / n_samples)
+    print(f"Epoch {epoch:3d} | η = {lr:.5f} | Mean Error = {decay_errors[-1]:.5f}")
+
+
+    lr *= decay_factor  # multiply learning rate by 0.8 each epoch
+
+print("\n--- Decaying Learning Rate Training Complete ---")
+
+# Plot decaying learning rate error curve
+plt.figure()
+plt.plot(range(1, num_epochs + 1), decay_errors, label="Decaying η")
+plt.xlabel("Epoch")
+plt.ylabel("Mean Squared Error (E)")
+plt.title("Error vs Epochs (Decaying Learning Rate)")
+plt.grid(True)
+plt.legend()
+plt.show()
+
+# ADAPTIVE LEARNING RATE
+
+eta = 0.3
+prev_error = float('inf')
+adapt_errors = []
+eta_values = []
+
+for epoch in range(1, num_epochs + 1):
+    total_dw = np.zeros_like(w_adapt)
+    total_db = 0
+    epoch_error = 0
+
+    for i in range(n_samples):
+        inp = x[i]
+        target = targets[i]
+        net = np.dot(w_adapt, inp) + b_adapt
+        out = sigmoid(net)
+        error = target - out
+        grad = error * sigmoid_prime(net)
+
+        total_dw += grad * inp
+        total_db += grad
+        epoch_error += error**2
+
+    w_adapt += eta * total_dw
+    b_adapt += eta * total_db
+    mean_error = epoch_error / n_samples
+    adapt_errors.append(mean_error)
+    eta_values.append(eta)
+    print(f"Epoch {epoch:3d} | η = {eta:.5f} | Mean Error = {mean_error:.5f}")
+
+
+    # Adaptive learning rule
+    if mean_error > prev_error * (1 + t):
+        eta *= d   # decrease
+    elif mean_error < prev_error:
+        eta *= D   # increase
+    prev_error = mean_error
+
+print("\n--- Adaptive Learning Rate Training Complete ---")
+
+# Plot adaptive learning rate error curve
+plt.figure()
+plt.plot(range(1, num_epochs + 1), adapt_errors, label="Adaptive η")
+plt.xlabel("Epoch")
+plt.ylabel("Mean Squared Error (E)")
+plt.title("Error vs Epochs (Adaptive Learning Rate)")
+plt.grid(True)
+plt.legend()
+plt.show()
+
+# visualize how η changes over epochs
+plt.figure()
+plt.plot(range(1, num_epochs + 1), eta_values, marker='o')
+plt.xlabel("Epoch")
+plt.ylabel("Learning Rate (η)")
+plt.title("Adaptive Learning Rate Changes Over Time")
+plt.grid(True)
+plt.show()
