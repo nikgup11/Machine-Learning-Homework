@@ -89,13 +89,19 @@ def quadratic_kernel(x1, x2):
     return (np.dot(x1, x2) + 1) ** 2
 
 # Load data
-X, y = load_data("./Homework 5/SMO_Data-1-1.txt")
+X, y = load_data("SMO_Data-1-1.txt")
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
 
-max_iters = 1000     # max number of SMO iterations
+max_iters = 200     # max number of SMO iterations
 tolerance = 1e-5     # minimum alpha change threshold to declare convergence
 b = 0
 alphas = init_alphas(y)
+
+# Prompt user for kernel type
+kernel_choice = input("Type in 'lin' for linear kernel or 'quad' for quadratic kernel: ")
+if kernel_choice not in {'lin', 'quad'}:
+    print("Invalid choice. Defaulting to linear kernel.")
+    kernel_choice = 'lin'
 
 # LINEAR KERNEL (**QUADRATIC TO BE IMPLEMENTED**)
 for iteration in range(max_iters):
@@ -107,8 +113,11 @@ for iteration in range(max_iters):
 
     # Step 3 - KKT Conditions
     kkt_vals = kkt_conditions(alphas, y, X, w, b)
-    E = compute_errors(alphas, y, X, b)
-
+    if(kernel_choice == 'lin'): # Linear Kernel
+        E = compute_errors(alphas, y, X, b)
+    elif(kernel_choice == 'quad'): # Quadratic Kernel
+        E = compute_errors(alphas, y, X, b, kernel=quadratic_kernel)
+    
     # Step 4 - Pick x_1, x_2
     i_1 = np.argmax(kkt_vals)
     x_1 = X[i_1]
@@ -131,9 +140,6 @@ for iteration in range(max_iters):
 
     # *********************************************************************************************************************************************
     # TO-DO: 
-    # - Steps 6-9
-    # - Implement for Quadratic Kernel (minor change to compute_errors call, keep everything else the same in SMO algo - change commented at the bottom)
-    # - Run each version on the same training and test data sets
     # - Plot the separating surfaces obtained, provide the Confusion Matrix
     # *********************************************************************************************************************************************
     # Step 6: update alpha_i1 (for index i_1)
@@ -156,15 +162,18 @@ for iteration in range(max_iters):
         b = np.mean(b_values)
         
     # Step 9: test for classification
-
-    # Check for convergence
-    alpha_change = np.linalg.norm(alphas - alpha_prev)
-    if alpha_change < tolerance:
-        print(f"Converged after {iteration+1} iterations.")
+    y_pred = np.sign(np.dot(X, w) + b)      # Predict labels for all training samples
+    correctly_classified = np.all(y_pred == y)  # Check if all points classified correctly
+    
+    # Optionally, print progress/statistics
+    acc = np.mean(y_pred == y)
+    print(f"Iteration {iteration+1}: accuracy = {acc:.4f}, converged = {correctly_classified}")
+    
+    # Early stopping if all samples are correctly classified
+    if correctly_classified:
+        print(f"Converged after {iteration+1} iterations!")
         break
+
 else:
     print("Max iterations reached. Classified")
 
-# Quadratic Kernel
-# kkt_vals = kkt_conditions(alphas, y, X, w, b)
-# E = compute_errors(alphas, y, X, b, kernel=quadratic_kernel)
