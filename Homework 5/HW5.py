@@ -89,7 +89,7 @@ def quadratic_kernel(x1, x2):
     return (np.dot(x1, x2) + 1) ** 2
 
 # Load data
-X, y = load_data('SMO_Data-1-1.txt')
+X, y = load_data("./Homework 5/SMO_Data-1-1.txt")
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
 
 max_iters = 1000     # max number of SMO iterations
@@ -136,6 +136,26 @@ for iteration in range(max_iters):
     # - Run each version on the same training and test data sets
     # - Plot the separating surfaces obtained, provide the Confusion Matrix
     # *********************************************************************************************************************************************
+    # Step 6: update alpha_i1 (for index i_1)
+    alpha_i1 = alphas[i_1] + y[i_1] * y[i_2] * (alphas[i_2] - alpha_i2)
+    alphas_updated[i_1] = alpha_i1
+
+    # Step 7: for i = 1, ..., m, if alpha_i < epsilon, set alpha_i = 0
+    alphas_updated = np.where(alphas_updated < tolerance, 0, alphas_updated)
+
+    # Step 8: Select alpha_i > 0, compute b
+    support_vector_indices = np.where(alphas_updated > 0)[0]
+
+    # NOTICE: This uses mean of values from all support vectors
+    # So consider use only 1 if error happens
+    if len(support_vector_indices) > 0:
+        b_values = []
+        for sv_index in support_vector_indices:
+            b_sv = y[sv_index] - np.dot(w, X[sv_index])
+            b_values.append(b_sv)
+        b = np.mean(b_values)
+        
+    # Step 9: test for classification
 
     # Check for convergence
     alpha_change = np.linalg.norm(alphas - alpha_prev)
@@ -144,10 +164,6 @@ for iteration in range(max_iters):
         break
 else:
     print("Max iterations reached. Classified")
-
-
-
-
 
 # Quadratic Kernel
 # kkt_vals = kkt_conditions(alphas, y, X, w, b)
