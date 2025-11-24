@@ -171,4 +171,3 @@ for iteration in range(max_iters):
 
 else:
     print("Max iterations reached. Classified")
-
