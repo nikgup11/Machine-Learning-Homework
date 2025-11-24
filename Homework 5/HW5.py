@@ -160,7 +160,7 @@ for iteration in range(max_iters):
     y_pred = np.sign(np.dot(X, w) + b)      # Predict labels for all training samples
     correctly_classified = np.all(y_pred == y)  # Check if all points classified correctly
     
-    # Optionally, print progress/statistics
+    # Print progress/statistics
     acc = np.mean(y_pred == y)
     print(f"Iteration {iteration+1}: accuracy = {acc:.4f}, converged = {correctly_classified}")
     
