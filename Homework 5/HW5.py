@@ -103,7 +103,7 @@ if kernel_choice not in {'lin', 'quad'}:
     print("Invalid choice. Defaulting to linear kernel.")
     kernel_choice = 'lin'
 
-# LINEAR KERNEL (**QUADRATIC TO BE IMPLEMENTED**)
+# SMO Algorithm
 for iteration in range(max_iters):
     # Store alphas original copy for checking convergence
     alpha_prev = alphas.copy()
@@ -137,11 +137,6 @@ for iteration in range(max_iters):
     alphas_updated = alphas.copy()
     alphas_updated[i_2] = alpha_i2
 
-
-    # *********************************************************************************************************************************************
-    # TO-DO: 
-    # - Plot the separating surfaces obtained, provide the Confusion Matrix
-    # *********************************************************************************************************************************************
     # Step 6: update alpha_i1 (for index i_1)
     alpha_i1 = alphas[i_1] + y[i_1] * y[i_2] * (alphas[i_2] - alpha_i2)
     alphas_updated[i_1] = alpha_i1
