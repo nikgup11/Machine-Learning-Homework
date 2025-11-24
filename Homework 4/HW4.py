@@ -154,8 +154,8 @@ print(f"Learned weights: {w}")
 print(f"Learned bias: {bias}")
 print(f"Training accuracy: {accuracy:.2f}")
 
-# Show first 10 predictions and their targets
-for i in range(10):
+# Show first 100 predictions and their targets
+for i in range(100):
     print(f"x: {x[i]}, Predicted: {pred_labels[i]}, Target: {targets[i]}")
 
 # Compare delta rule batch training vs incremental training with execution time, weight updates, 
